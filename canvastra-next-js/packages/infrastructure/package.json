@@ -1,0 +1,21 @@
+{
+  "name": "@canvastra-next-js/infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./repositories/*": "./src/repositories/*.ts",
+    "./services/*": "./src/services/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@canvastra-next-js/core": "workspace:*",
+    "@canvastra-next-js/db": "workspace:*",
+    "drizzle-orm": "^0.45.1"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

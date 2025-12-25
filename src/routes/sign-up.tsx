@@ -1,16 +1,18 @@
 // src/routes/sign-up.tsx
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SignUpCard } from "@/features/auth/components/sign-up-card";
-import { auth } from "@/infrastructure/auth/better-auth";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/sign-up")({
   beforeLoad: async () => {
     // Check if already authenticated
     try {
-      const session = await auth.api.getSession({
-        headers: new Headers(),
+      const { data } = await authClient.getSession({
+        fetchOptions: {
+          headers: new Headers(),
+        }
       });
-      if (session?.user) {
+      if (data?.user) {
         throw redirect({ to: "/" });
       }
     } catch (error) {

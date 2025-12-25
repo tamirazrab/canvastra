@@ -7,4 +7,4 @@ const apiUrl =
     ? import.meta.env.VITE_APP_URL || "http://localhost:3000"
     : import.meta.env.VITE_APP_URL || "http://localhost:3000";
 
-export const client = hc<AppType>(`${apiUrl}/api`);
+export const client = hc<AppType>(apiUrl);

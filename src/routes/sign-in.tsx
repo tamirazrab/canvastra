@@ -1,16 +1,18 @@
 // src/routes/sign-in.tsx
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SignInCard } from "@/features/auth/components/sign-in-card";
-import { auth } from "@/infrastructure/auth/better-auth";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/sign-in")({
   beforeLoad: async () => {
     // Check if already authenticated
     try {
-      const session = await auth.api.getSession({
-        headers: new Headers(),
+      const { data } = await authClient.getSession({
+        fetchOptions: {
+          headers: new Headers(),
+        }
       });
-      if (session?.user) {
+      if (data?.user) {
         throw redirect({ to: "/" });
       }
     } catch (error) {

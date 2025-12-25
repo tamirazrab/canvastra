@@ -1,0 +1,28 @@
+{
+  "name": "@canvastra-next-js/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@canvastra-next-js/config": "workspace:*"
+  },
+  "dependencies": {
+    "@trpc/server": "catalog:",
+    "@trpc/client": "catalog:",
+    "hono": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:",
+    "@canvastra-next-js/auth": "workspace:*",
+    "@canvastra-next-js/db": "workspace:*",
+    "@canvastra-next-js/core": "workspace:*",
+    "@canvastra-next-js/infrastructure": "workspace:*"
+  }
+}
