@@ -1,27 +1,26 @@
-import { InferResponseType } from "hono";
 import { useQuery } from "@tanstack/react-query";
+import { trpcClient } from "@/utils/trpc";
 
-import { client } from "@/lib/hono";
-
-export type ResponseType = InferResponseType<typeof client.api.projects[":id"]["$get"], 200>;
+// tRPC returns the project directly, but we wrap it to match canva-clone's structure
+export type ResponseType = {
+  data: Awaited<ReturnType<typeof trpcClient.project.get.query>>;
+};
 
 export const useGetProject = (id: string) => {
   const query = useQuery({
     enabled: !!id,
     queryKey: ["project", { id }],
     queryFn: async () => {
-      const response = await client.api.projects[":id"].$get({
-        param: {
+      try {
+        const result = await trpcClient.project.get.query({
           id,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch project");
+        });
+        // Wrap in data to match canva-clone's ResponseType structure
+        return { data: result };
+      } catch (error) {
+        console.error("Error fetching project:", error);
+        throw error;
       }
-
-      const { data } = await response.json();
-      return data;
     },
   });
 

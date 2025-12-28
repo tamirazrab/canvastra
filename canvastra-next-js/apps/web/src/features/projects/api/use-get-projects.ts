@@ -1,30 +1,20 @@
-import { InferResponseType } from "hono";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
 
-import { client } from "@/lib/hono";
+export const useGetProjects = (userId: string) => {
+	const query = useInfiniteQuery({
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => lastPage.nextPage,
+		queryKey: ["projects", { userId }],
+		queryFn: async ({ pageParam }) => {
+			const result = await trpc.project.list.query({
+				userId,
+				page: pageParam as number,
+				limit: 5,
+			});
+			return result;
+		},
+	});
 
-export type ResponseType = InferResponseType<typeof client.api.projects["$get"], 200>;
-
-export const useGetProjects = () => {
-  const query = useInfiniteQuery<ResponseType, Error>({
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => lastPage.nextPage,
-    queryKey: ["projects"],
-    queryFn: async ({ pageParam }) => {
-      const response = await client.api.projects.$get({
-        query: {
-          page: (pageParam as number).toString(),
-          limit: "5",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch projects");
-      }
-
-      return response.json();
-    },
-  });
-
-  return query;
+	return query;
 };

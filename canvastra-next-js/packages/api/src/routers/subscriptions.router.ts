@@ -1,55 +1,34 @@
-import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../index";
-import { stripe } from "@canvastra-next-js/infrastructure";
+import { container } from "@canvastra-next-js/infrastructure";
 import { TRPCError } from "@trpc/server";
+import { protectedProcedure, router } from "../index";
 
 export const subscriptionsRouter = router({
-  billing: protectedProcedure.mutation(async ({ ctx }) => {
-    const session = await stripe.billingPortal.sessions.create({
-      customer: ctx.session.user.id, // In real app, fetch customerId from DB
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}`,
-    });
+	getCurrent: protectedProcedure.query(async ({ ctx }) => {
+		const result = await container.useCases.subscription.get.execute({
+			userId: ctx.session.user.id,
+		});
+		return {
+			subscription: result.subscription,
+			isActive: result.isActive,
+		};
+	}),
 
-    if (!session.url) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create session",
-      });
-    }
+	checkout: protectedProcedure.mutation(async ({ ctx }) => {
+		const result =
+			await container.useCases.subscription.createCheckoutSession.execute({
+				userId: ctx.session.user.id,
+				email: ctx.session.user.email || undefined,
+			});
+		return result.url;
+	}),
 
-    return session.url;
-  }),
-
-  checkout: protectedProcedure.mutation(async ({ ctx }) => {
-    const session = await stripe.checkout.sessions.create({
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}?success=1`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}?canceled=1`,
-      payment_method_types: ["card", "paypal"],
-      mode: "subscription",
-      billing_address_collection: "auto",
-      customer_email: ctx.session.user.email || "",
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        userId: ctx.session.user.id,
-      },
-    });
-
-    const url = session.url;
-
-    if (!url) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create session",
-      });
-    }
-
-    return url;
-  }),
+	billing: protectedProcedure.mutation(async ({ ctx }) => {
+		const result =
+			await container.useCases.subscription.createBillingPortalSession.execute({
+				userId: ctx.session.user.id,
+			});
+		return result.url;
+	}),
 });
 
 export type SubscriptionsRouter = typeof subscriptionsRouter;

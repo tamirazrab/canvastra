@@ -1,21 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-
-import { client } from "@/lib/hono";
+import { trpc } from "@/utils/trpc";
 
 export const useGetSubscription = () => {
-  const query = useQuery({
-    queryKey: ["subscription"],
-    queryFn: async () => {
-      const response = await client.api.subscriptions.current.$get();
+	const query = useQuery({
+		queryKey: ["subscription"],
+		queryFn: async () => {
+			const result = await trpc.subscriptions.getCurrent.query();
+			return result;
+		},
+	});
 
-      if (!response.ok) {
-        throw new Error("Something went wrong");
-      }
-
-      const { data } = await response.json();
-      return data; 
-    },
-  });
-
-  return query;
+	return query;
 };

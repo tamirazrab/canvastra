@@ -2,16 +2,11 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import "dotenv/config";
-import { createContext } from "@canvastra-next-js/api/context";
 import { appRouter } from "@canvastra-next-js/api/routers/index";
 import { auth } from "@canvastra-next-js/auth";
 import { trpcServer } from "@hono/trpc-server";
 
-import ai from "./routes/ai";
-import images from "./routes/images";
-import projects from "./routes/projects";
-import subscriptions from "./routes/subscriptions";
-import users from "./routes/users";
+import webhook from "./routes/webhook";
 
 const app = new Hono();
 
@@ -34,22 +29,15 @@ app.use(
   "/trpc/*",
   trpcServer({
     router: appRouter,
-  })
+  }),
 );
 
-const routes = app
-  .basePath("/api")
-  .route("/ai", ai)
-  .route("/images", images)
-  .route("/projects", projects)
-  .route("/subscriptions", subscriptions)
-  .route("/users", users);
+// Webhook routes (need raw body access, not suitable for tRPC)
+app.basePath("/api").route("/webhook", webhook);
 
 app.get("/", (c) => {
   return c.text("OK");
 });
-
-export type AppType = typeof routes;
 
 // 404 handler
 app.notFound((c) => {
@@ -64,7 +52,7 @@ app.onError((err, c) => {
       error: "Internal server error",
       message: err.message,
     },
-    500
+    500,
   );
 });
 

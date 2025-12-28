@@ -18,10 +18,16 @@ export const queryClient = new QueryClient({
   }),
 });
 
-const trpcClient = createTRPCClient<AppRouter>({
+function getBaseUrl() {
+  if (typeof window !== "undefined") return ""; // Browser: use relative URL
+  // SSR: use full URL to Next.js app (not the separate server)
+  return process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+}
+
+export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${process.env.NEXT_PUBLIC_SERVER_URL}/trpc`,
+      url: `${getBaseUrl()}/api/trpc`,
       fetch(url, options) {
         return fetch(url, {
           ...options,

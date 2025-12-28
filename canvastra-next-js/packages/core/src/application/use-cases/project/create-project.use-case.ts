@@ -2,37 +2,35 @@ import type { Project } from "../../domain/entities";
 import type { ProjectRepository } from "../../domain/repositories";
 
 export interface CreateProjectRequest {
-  userId: string;
-  name: string;
-  json: string;
-  width: number;
-  height: number;
+	userId: string;
+	name: string;
+	json: string;
+	width: number;
+	height: number;
 }
 
 export interface CreateProjectResponse {
-  project: Project;
+	project: Project;
 }
 
 export interface ICreateProjectUseCase {
-  execute(request: CreateProjectRequest): Promise<CreateProjectResponse>;
+	execute(request: CreateProjectRequest): Promise<CreateProjectResponse>;
 }
 
 export class CreateProjectUseCase implements ICreateProjectUseCase {
-  constructor(private readonly projectRepository: ProjectRepository) { }
+	constructor(private readonly projectRepository: ProjectRepository) {}
 
-  async execute(
-    request: CreateProjectRequest
-  ): Promise<CreateProjectResponse> {
-    const { userId, name, json, width, height } = request;
+	async execute(request: CreateProjectRequest): Promise<CreateProjectResponse> {
+		const { userId, name, json, width, height } = request;
 
-    const project = await this.projectRepository.create({
-      name,
-      userId,
-      json,
-      width,
-      height,
-    });
+		const project = await this.projectRepository.create({
+			name,
+			userId,
+			json,
+			width,
+			height,
+		});
 
-    return { project };
-  }
+		return { project };
+	}
 }

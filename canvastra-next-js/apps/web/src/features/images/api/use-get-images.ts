@@ -1,21 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
 
-import { client } from "@/lib/hono";
+type GetImagesInput = {
+	count?: number;
+	collectionIds?: string[];
+};
 
-export const useGetImages = () => {
-  const query = useQuery({
-    queryKey: ["images"],
-    queryFn: async () => {
-      const response = await client.api.images.$get();
+export const useGetImages = (input?: GetImagesInput) => {
+	const query = useQuery({
+		queryKey: ["images", input],
+		queryFn: async () => {
+			const result = await trpc.images.getImages.query(input ?? {});
+			return result;
+		},
+	});
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch images");
-      }
-
-      const { data } = await response.json();
-      return data;
-    },
-  });
-
-  return query;
+	return query;
 };

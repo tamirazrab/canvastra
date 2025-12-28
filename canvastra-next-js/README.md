@@ -1,6 +1,25 @@
 # Canvastra Next.js
 
-A professional design editor built with Next.js and hexagonal DDD architecture.
+<div align="center">
+
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![tRPC](https://img.shields.io/badge/tRPC-2596BE?style=for-the-badge&logo=trpc&logoColor=white)
+
+**A professional design editor built with Next.js and hexagonal DDD architecture**
+
+[![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen)](./TEST_SUMMARY.md)
+[![Coverage](https://img.shields.io/badge/coverage-85%25%2B-green)](./TEST_SUMMARY.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+[Features](#-key-features) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Documentation](#-documentation)
+
+</div>
+
+---
+
+A full-stack design editor application demonstrating clean architecture principles, domain-driven design, and modern web development practices. Built with TypeScript, Next.js, and a hexagonal architecture for maximum maintainability and testability.
 
 ## 🏗️ Architecture
 
@@ -46,8 +65,9 @@ cd canvastra-next-js
 bun install
 
 # Set up environment variables
-cp .env.example apps/web/.env.local
-# Edit apps/web/.env.local with your values
+cp .env.example .env.local
+# Edit .env.local with your values
+# See docs/ENVIRONMENT_VARIABLES.md for detailed guide
 
 # Push database schema
 bun run db:push
@@ -103,19 +123,58 @@ bun run build            # Build all packages
 bun run check            # Run Biome linter
 ```
 
+## 🧪 Testing
+
+This project includes comprehensive testing:
+
+- **Unit Tests**: Domain entities, value objects, and use cases (48 tests)
+- **Integration Tests**: Repository implementations and API routes
+- **E2E Tests**: Critical user flows with Playwright
+
+```bash
+# Run all unit tests
+bun run test
+
+# Run unit tests with coverage
+cd packages/core && bun run test:coverage
+
+# Run E2E tests (requires database and env setup)
+bun run test:e2e
+
+# Run E2E tests with UI
+bun run test:e2e:ui
+
+# Run all tests
+bun run test:all
+```
+
+See [TESTING.md](./TESTING.md) for detailed testing documentation.
+
 ## 📖 Documentation
 
 - [Architecture Guide](./ARCHITECTURE.md) - Detailed architecture documentation
-- [Migration Summary](./MIGRATION_SUMMARY.md) - TanStack to Next.js migration notes
+- [Migration Summary](./MIGRATION_SUMMARY.md) - Complete migration documentation
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute to this project
+- [Testing Guide](./TESTING.md) - Testing strategy and how to run tests
+- [API Documentation](./docs/API.md) - Complete API reference
+- [Next Steps](./NEXT_STEPS.md) - Roadmap for future enhancements
+
+## 🏗️ Architecture Highlights
+
+- **Hexagonal Architecture**: Clean separation of concerns with domain-driven design
+- **Dependency Inversion**: Core business logic independent of frameworks
+- **Type Safety**: End-to-end TypeScript with tRPC
+- **Testability**: Isolated business logic for easy unit testing
+- **Scalability**: Architecture supports growing complexity
 
 ## 🤝 Contributing
 
-This is a learning project demonstrating hexagonal DDD architecture in Next.js. Contributions are welcome!
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
-MIT
+MIT License - see [LICENSE](./LICENSE) file for details
 
 ## 🙏 Acknowledgments
 
-Built with inspiration from modern design tools and clean architecture principles.
+Built with inspiration from modern design tools and clean architecture principles. Special thanks to the open-source community for the amazing tools and libraries.

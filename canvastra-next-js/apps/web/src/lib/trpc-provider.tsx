@@ -1,10 +1,10 @@
 "use client";
 
+import type { AppRouter } from "@canvastra-next-js/api/routers/index";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import { useState } from "react";
-import type { AppRouter } from "@canvastra-next-js/api/routers";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -22,7 +22,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
           url: `${getBaseUrl()}/api/trpc`,
         }),
       ],
-    })
+    }),
   );
 
   return (

@@ -1,32 +1,20 @@
-import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { InferResponseType } from "hono";
-
-import { client } from "@/lib/hono";
-
-type ResponseType = InferResponseType<typeof client.api.subscriptions.billing["$post"], 200>;
+import { toast } from "sonner";
+import { trpc } from "@/utils/trpc";
 
 export const useBilling = () => {
-  const mutation = useMutation<
-    ResponseType,
-    Error
-  >({
-    mutationFn: async () => {
-      const response = await client.api.subscriptions.billing.$post();
+	const mutation = useMutation({
+		mutationFn: async () => {
+			const result = await trpc.subscriptions.billing.mutate();
+			return result;
+		},
+		onSuccess: (url) => {
+			window.location.href = url;
+		},
+		onError: () => {
+			toast.error("Failed to create session");
+		},
+	});
 
-      if (!response.ok) {
-        throw new Error("Failed to create session");
-      }
-
-      return await response.json();
-    },
-    onSuccess: ({ data }) => {
-      window.location.href = data;
-    },
-    onError: () => {
-      toast.error("Failed to create session");
-    },
-  });
-
-  return mutation;
+	return mutation;
 };

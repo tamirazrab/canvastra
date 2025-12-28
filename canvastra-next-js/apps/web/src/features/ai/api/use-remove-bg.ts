@@ -1,22 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
-import { InferRequestType, InferResponseType } from "hono";
+import { trpc } from "@/utils/trpc";
 
-import { client } from "@/lib/hono";
-
-type ResponseType = InferResponseType<typeof client.api.ai["remove-bg"]["$post"]>;
-type RequestType = InferRequestType<typeof client.api.ai["remove-bg"]["$post"]>["json"];
+type RemoveBgInput = {
+	image: string;
+};
 
 export const useRemoveBg = () => {
-  const mutation = useMutation<
-    ResponseType,
-    Error,
-    RequestType
-  >({
-    mutationFn: async (json) => {
-      const response = await client.api.ai["remove-bg"].$post({ json });
-      return await response.json();
-    },
-  });
+	const mutation = useMutation({
+		mutationFn: async (input: RemoveBgInput) => {
+			const result = await trpc.ai.removeBg.mutate(input);
+			return result;
+		},
+	});
 
-  return mutation;
+	return mutation;
 };

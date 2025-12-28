@@ -1,48 +1,46 @@
-import { fabric } from "fabric";
+import type { fabric } from "fabric";
 import { useCallback, useRef } from "react";
 
 interface UseClipboardProps {
-  canvas: fabric.Canvas | null;
-};
+	canvas: fabric.Canvas | null;
+}
 
-export const useClipboard = ({
-  canvas
-}: UseClipboardProps) => {
-  const clipboard = useRef<any>(null);
+export const useClipboard = ({ canvas }: UseClipboardProps) => {
+	const clipboard = useRef<any>(null);
 
-  const copy = useCallback(() => {
-    canvas?.getActiveObject()?.clone((cloned: any) => {
-      clipboard.current = cloned;
-    });
-  }, [canvas]);
-  
-  const paste = useCallback(() => {
-    if (!clipboard.current) return;
+	const copy = useCallback(() => {
+		canvas?.getActiveObject()?.clone((cloned: any) => {
+			clipboard.current = cloned;
+		});
+	}, [canvas]);
 
-    clipboard.current.clone((clonedObj: any) => {
-      canvas?.discardActiveObject();
-      clonedObj.set({
-        left: clonedObj.left + 10,
-        top: clonedObj.top + 10,
-        evented: true,
-      });
+	const paste = useCallback(() => {
+		if (!clipboard.current) return;
 
-      if (clonedObj.type === "activeSelection") {
-        clonedObj.canvas = canvas;
-        clonedObj.forEachObject((obj: any) => {
-          canvas?.add(obj);
-        });
-        clonedObj.setCoords();
-      } else {
-        canvas?.add(clonedObj);
-      }
+		clipboard.current.clone((clonedObj: any) => {
+			canvas?.discardActiveObject();
+			clonedObj.set({
+				left: clonedObj.left + 10,
+				top: clonedObj.top + 10,
+				evented: true,
+			});
 
-      clipboard.current.top += 10;
-      clipboard.current.left += 10;
-      canvas?.setActiveObject(clonedObj);
-      canvas?.requestRenderAll();
-    });
-  }, [canvas]);
+			if (clonedObj.type === "activeSelection") {
+				clonedObj.canvas = canvas;
+				clonedObj.forEachObject((obj: any) => {
+					canvas?.add(obj);
+				});
+				clonedObj.setCoords();
+			} else {
+				canvas?.add(clonedObj);
+			}
 
-  return { copy, paste };
+			clipboard.current.top += 10;
+			clipboard.current.left += 10;
+			canvas?.setActiveObject(clonedObj);
+			canvas?.requestRenderAll();
+		});
+	}, [canvas]);
+
+	return { copy, paste };
 };

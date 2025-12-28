@@ -1,19 +1,39 @@
 import { ValueObject } from "./value-object";
 
 export class Email extends ValueObject<string> {
-  private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	private readonly _normalizedValue: string;
 
-  protected validate(value: string): string {
-    if (!value || value.trim().length === 0) {
-      throw new Error("Email cannot be empty");
-    }
+	constructor(value: string) {
+		const normalized = Email.normalize(value);
+		super(normalized);
+		this._normalizedValue = normalized;
+	}
 
-    const trimmed = value.trim().toLowerCase();
+	private static normalize(value: string): string {
+		if (!value || value.trim().length === 0) {
+			throw new Error("Email cannot be empty");
+		}
 
-    if (!Email.EMAIL_REGEX.test(trimmed)) {
-      throw new Error(`Invalid email format: ${value}`);
-    }
+		const trimmed = value.trim().toLowerCase();
 
-    return trimmed;
-  }
+		if (!Email.EMAIL_REGEX.test(trimmed)) {
+			throw new Error(`Invalid email format: ${value}`);
+		}
+
+		return trimmed;
+	}
+
+	protected validate(): void {
+		// Validation is done in normalize() during construction
+		// This method exists to satisfy the abstract requirement
+	}
+
+	public getValue(): string {
+		return this._normalizedValue;
+	}
+
+	public get value(): string {
+		return this._normalizedValue;
+	}
 }

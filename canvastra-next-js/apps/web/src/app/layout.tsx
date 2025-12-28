@@ -1,24 +1,19 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Suspense } from "react";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { SubscriptionAlert } from "@/features/subscriptions/components/subscription-alert";
 
-import "../index.css";
-import Header from "@/components/header";
+import { Modals } from "@/components/modals";
 import Providers from "@/components/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import "../index.css";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "canvastra-next-js",
-  description: "canvastra-next-js",
+  title: "The Canvas",
+  description: "Build Something Great!",
 };
 
 export default function RootLayout({
@@ -27,13 +22,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en">
+      <body className={inter.className}>
         <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
+          <Modals />
+          <Suspense fallback={null}>
+            <SubscriptionAlert />
+          </Suspense>
+          {children}
         </Providers>
       </body>
     </html>

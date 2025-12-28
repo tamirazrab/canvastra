@@ -1,38 +1,27 @@
-import { toast } from "sonner";
-import { InferRequestType, InferResponseType } from "hono";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { trpc } from "@/utils/trpc";
 
-import { client } from "@/lib/hono";
-
-type ResponseType = InferResponseType<typeof client.api.projects[":id"]["duplicate"]["$post"], 200>;
-type RequestType = InferRequestType<typeof client.api.projects[":id"]["duplicate"]["$post"]>["param"];
+type DuplicateProjectInput = {
+	id: string;
+	userId: string;
+};
 
 export const useDuplicateProject = () => {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  const mutation = useMutation<
-    ResponseType,
-    Error,
-    RequestType
-  >({
-    mutationFn: async (param) => {
-      const response = await client.api.projects[":id"].duplicate.$post({ 
-        param,
-      });
+	const mutation = useMutation({
+		mutationFn: async (input: DuplicateProjectInput) => {
+			const result = await trpc.project.duplicate.mutate(input);
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["projects"] });
+		},
+		onError: () => {
+			toast.error("Failed to duplicate project");
+		},
+	});
 
-      if (!response.ok) {
-        throw new Error("Failed to duplicate project");
-      }
-
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-    },
-    onError: () => {
-      toast.error("Failed to duplicate project");
-    }
-  });
-
-  return mutation;
+	return mutation;
 };

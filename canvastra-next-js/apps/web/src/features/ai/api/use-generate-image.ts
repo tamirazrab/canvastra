@@ -1,22 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
-import { InferRequestType, InferResponseType } from "hono";
+import { trpc } from "@/utils/trpc";
 
-import { client } from "@/lib/hono";
-
-type ResponseType = InferResponseType<typeof client.api.ai["generate-image"]["$post"]>;
-type RequestType = InferRequestType<typeof client.api.ai["generate-image"]["$post"]>["json"];
+type GenerateImageInput = {
+	prompt: string;
+};
 
 export const useGenerateImage = () => {
-  const mutation = useMutation<
-    ResponseType,
-    Error,
-    RequestType
-  >({
-    mutationFn: async (json) => {
-      const response = await client.api.ai["generate-image"].$post({ json });
-      return await response.json();
-    },
-  });
+	const mutation = useMutation({
+		mutationFn: async (input: GenerateImageInput) => {
+			const result = await trpc.ai.generateImage.mutate(input);
+			return result;
+		},
+	});
 
-  return mutation;
+	return mutation;
 };

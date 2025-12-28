@@ -1,37 +1,37 @@
 {
-  "name": "@canvastra-next-js/server",
-  "type": "module",
-  "main": "src/index.ts",
-  "scripts": {
-    "build": "tsdown",
-    "check-types": "tsc -b",
-    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
-    "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.js"
-  },
-  "dependencies": {
-    "hono": "catalog:",
-    "@trpc/server": "catalog:",
-    "drizzle-orm": "^0.45.1",
-    "drizzle-zod": "^0.6.0",
-    "@hono/trpc-server": "^0.4.0",
-    "better-auth": "catalog:",
-    "dotenv": "catalog:",
-    "zod": "catalog:",
-    "@canvastra-next-js/api": "workspace:*",
-    "@canvastra-next-js/auth": "workspace:*",
-    "@canvastra-next-js/infrastructure": "workspace:*",
-    "@canvastra-next-js/core": "workspace:*",
-    "stripe": "^14.25.0",
-    "replicate": "^0.29.1",
-    "unsplash-js": "^7.0.19",
-    "bcryptjs": "^2.4.3"
-  },
-  "devDependencies": {
-    "@types/bun": "catalog:",
-    "typescript": "catalog:",
-    "tsdown": "^0.16.5",
-    "@canvastra-next-js/config": "workspace:*",
-    "@types/bcryptjs": "^2.4.6"
-  }
+	"name": "@canvastra-next-js/server",
+	"type": "module",
+	"main": "src/index.ts",
+	"scripts": {
+		"build": "tsdown",
+		"check-types": "tsc -b",
+		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+		"dev": "bun run --hot src/index.ts",
+		"start": "bun run dist/index.js"
+	},
+	"dependencies": {
+		"hono": "catalog:",
+		"@trpc/server": "catalog:",
+		"drizzle-orm": "^0.45.1",
+		"drizzle-zod": "^0.6.0",
+		"@hono/trpc-server": "^0.4.0",
+		"better-auth": "catalog:",
+		"dotenv": "catalog:",
+		"zod": "catalog:",
+		"@canvastra-next-js/api": "workspace:*",
+		"@canvastra-next-js/auth": "workspace:*",
+		"@canvastra-next-js/infrastructure": "workspace:*",
+		"@canvastra-next-js/core": "workspace:*",
+		"stripe": "^14.25.0",
+		"replicate": "^0.29.1",
+		"unsplash-js": "^7.0.19",
+		"bcryptjs": "^2.4.3"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"typescript": "catalog:",
+		"tsdown": "^0.16.5",
+		"@canvastra-next-js/config": "workspace:*",
+		"@types/bcryptjs": "^2.4.6"
+	}
 }

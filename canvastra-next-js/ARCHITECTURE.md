@@ -6,29 +6,55 @@ This document describes the hexagonal domain-driven design (DDD) architecture im
 
 The project follows clean hexagonal architecture with clear separation of concerns:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                       │
-│              (Next.js App, tRPC Routes)                     │
-└─────────────────────────────────────────────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Application Layer                         │
-│         (Use Cases - Business Operations)                   │
-│         packages/core/src/application/                      │
-└─────────────────────────────────────────────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     Domain Layer                            │
-│    (Entities, Value Objects, Repository Interfaces)        │
-│         packages/core/src/domain/                           │
-└─────────────────────────────────────────────────────────────┘
-                          ▲
-┌─────────────────────────────────────────────────────────────┐
-│                  Infrastructure Layer                       │
-│     (Drizzle Repositories, External Services)               │
-│         packages/infrastructure/src/                        │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Presentation["Presentation Layer"]
+        Web["apps/web<br/>(Next.js)"]
+        TRPC["packages/api<br/>(tRPC Routers)"]
+    end
+    
+    subgraph Application["Application Layer"]
+        UseCases["packages/core/src/application<br/>(Use Cases)"]
+    end
+    
+    subgraph Domain["Domain Layer"]
+        Entities["packages/core/src/domain/entities<br/>(Entities)"]
+        VOs["packages/core/src/domain/value-objects<br/>(Value Objects)"]
+        RepoInterfaces["packages/core/src/domain/repositories<br/>(Repository Interfaces)"]
+        Services["packages/core/src/domain/services<br/>(Domain Services)"]
+    end
+    
+    subgraph Infrastructure["Infrastructure Layer"]
+        Repos["packages/infrastructure/src/repositories<br/>(Repository Implementations)"]
+        ExtServices["packages/infrastructure/src/services<br/>(External Services)"]
+        DI["packages/infrastructure/src/di<br/>(Dependency Injection)"]
+    end
+    
+    subgraph External["External Systems"]
+        DB["PostgreSQL<br/>(Database)"]
+        Stripe["Stripe API"]
+        Replicate["Replicate API"]
+        Unsplash["Unsplash API"]
+    end
+    
+    Web -->|tRPC Client| TRPC
+    TRPC -->|Uses| UseCases
+    UseCases -->|Depends on| RepoInterfaces
+    UseCases -->|Depends on| Services
+    Repos -->|Implements| RepoInterfaces
+    ExtServices -->|Implements| Services
+    DI -->|Wires| UseCases
+    DI -->|Wires| Repos
+    DI -->|Wires| ExtServices
+    Repos -->|Queries| DB
+    ExtServices -->|Calls| Stripe
+    ExtServices -->|Calls| Replicate
+    ExtServices -->|Calls| Unsplash
+    
+    style Domain fill:#e1f5ff
+    style Application fill:#f0f9ff
+    style Infrastructure fill:#fff4e6
+    style Presentation fill:#f5f5f5
 ```
 
 ## Package Structure
@@ -164,9 +190,19 @@ Frontend application using Next.js App Router.
 - **Scalability**: Architecture supports growing complexity
 - **Type Safety**: Full TypeScript coverage end-to-end
 
-## Next Steps
+## Implementation Status
 
-To extend this architecture:
+✅ **Complete** - All features have been migrated to clean architecture:
+
+- **Repositories**: Project, User, Subscription
+- **Use Cases**: All CRUD operations for Projects, Users, Subscriptions, AI, Images
+- **Domain Services**: BillingService, AIService, ImageService
+- **tRPC Routers**: Project, Subscription, AI, Images
+- **Frontend**: All API hooks migrated to tRPC
+
+## Extending the Architecture
+
+To add new features:
 
 1. Add new entities to `packages/core/src/domain/entities/`
 2. Define repository interface in `packages/core/src/domain/repositories/`
@@ -174,4 +210,14 @@ To extend this architecture:
 4. Implement repository in `packages/infrastructure/src/repositories/`
 5. Register in DI container `packages/infrastructure/src/di/container.ts`
 6. Create tRPC router in `packages/api/src/routers/`
-7. Consume from Next.js app in `apps/web/`
+7. Consume from Next.js app in `apps/web/` using tRPC client
+
+## Architecture Compliance
+
+This repository follows clean architecture principles:
+
+- ✅ **Dependency Rule**: Dependencies point inward (Domain ← Application ← Infrastructure ← API ← UI)
+- ✅ **Framework Independence**: Core package has zero framework dependencies
+- ✅ **Testability**: Business logic can be tested without external dependencies
+- ✅ **Separation of Concerns**: Each layer has distinct responsibilities
+- ✅ **Single Responsibility**: Each use case handles one business operation

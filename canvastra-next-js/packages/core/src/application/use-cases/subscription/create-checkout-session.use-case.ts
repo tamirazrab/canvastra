@@ -1,25 +1,32 @@
 import type { BillingService } from "../../domain/services/billing.service";
 
 export interface CreateCheckoutSessionRequest {
-  userId: string;
+	userId: string;
+	email?: string;
 }
 
 export interface CreateCheckoutSessionResponse {
-  url: string;
+	url: string;
 }
 
 export interface ICreateCheckoutSessionUseCase {
-  execute(request: CreateCheckoutSessionRequest): Promise<CreateCheckoutSessionResponse>;
+	execute(
+		request: CreateCheckoutSessionRequest,
+	): Promise<CreateCheckoutSessionResponse>;
 }
 
-export class CreateCheckoutSessionUseCase implements ICreateCheckoutSessionUseCase {
-  constructor(private readonly billingService: BillingService) { }
+export class CreateCheckoutSessionUseCase
+	implements ICreateCheckoutSessionUseCase
+{
+	constructor(private readonly billingService: BillingService) {}
 
-  async execute(request: CreateCheckoutSessionRequest): Promise<CreateCheckoutSessionResponse> {
-    const { userId } = request;
+	async execute(
+		request: CreateCheckoutSessionRequest,
+	): Promise<CreateCheckoutSessionResponse> {
+		const { userId, email } = request;
 
-    const url = await this.billingService.createCheckoutSession(userId);
+		const url = await this.billingService.createCheckoutSession(userId, email);
 
-    return { url };
-  }
+		return { url };
+	}
 }
