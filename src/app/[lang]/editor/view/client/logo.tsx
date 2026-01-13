@@ -1,0 +1,28 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { Space_Grotesk } from "next/font/google";
+import { cn } from "@/bootstrap/helpers/lib/ui-utils";
+import { useParams } from "next/navigation";
+
+const font = Space_Grotesk({
+  weight: ["700"],
+  subsets: ["latin"],
+});
+
+export function Logo() {
+  const params = useParams();
+  const lang = (params.lang as string) || "en";
+
+  return (
+    <Link href={`/${lang}/editor`}>
+      <div className="flex items-center gap-x-2 hover:opacity-75 transition h-[68px] px-4">
+        <div className="size-8 relative">
+          <Image src="/logo.svg" alt="The Canvas" fill />
+        </div>
+        <h1 className={cn(font.className, "text-xl font-bold")}>The Canvas</h1>
+      </div>
+    </Link>
+  );
+}
