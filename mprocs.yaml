@@ -1,0 +1,8 @@
+procs:
+  inngest:
+    shell: "npm run inngest-dev"
+    autostart: true
+
+  canvastra:
+    shell: "bun run dev"
+    autostart: true
