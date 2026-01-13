@@ -1,0 +1,171 @@
+"use client";
+
+import { useState, useCallback, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { FaGithub } from "react-icons/fa";
+import { authClient } from "@/lib/auth-client";
+
+import { Button } from "@/app/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
+import { Input } from "@/app/components/ui/input";
+import { Label } from "@/app/components/ui/label";
+import { toast } from "sonner";
+
+type LoadingState = "idle" | "email" | "github";
+
+export function SignInCard() {
+  const params = useParams();
+  const router = useRouter();
+  const { lang } = params as { lang: string };
+  const [loading, setLoading] = useState<LoadingState>("idle");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleInputChange = useCallback(
+    (field: "email" | "password") =>
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+      },
+    [],
+  );
+
+  const onSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading("email");
+
+      try {
+        const res = await authClient.signIn.email({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (res.error) {
+          toast.error("Invalid email or password");
+          setLoading("idle");
+          return;
+        }
+
+        // Refresh server components to pick up the new session
+        router.refresh();
+        // Navigate to editor - cookies are already set by better-auth
+        router.push(`/${lang}/editor`);
+      } catch {
+        toast.error("Something went wrong");
+        setLoading("idle");
+      }
+    },
+    [formData.email, formData.password, lang, router],
+  );
+
+  const onGithubSignIn = useCallback(async () => {
+    setLoading("github");
+    try {
+      await authClient.signIn.social({
+        provider: "github",
+        callbackURL: `/${lang}/editor`,
+      });
+    } catch {
+      toast.error("Failed to sign in with GitHub");
+      setLoading("idle");
+    }
+  }, [lang]);
+
+  const isDisabled = useMemo(() => loading !== "idle", [loading]);
+
+  return (
+    <Card className="border-none shadow-none bg-white/10 backdrop-blur-md">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold text-white">
+          Welcome back
+        </CardTitle>
+        <CardDescription className="text-white/80">
+          Enter your email to sign in to your account
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-white">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              value={formData.email}
+              onChange={handleInputChange("email")}
+              disabled={isDisabled}
+              className="bg-white/20 border-white/30 text-white placeholder:text-white/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-white">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={handleInputChange("password")}
+              disabled={isDisabled}
+              className="bg-white/20 border-white/30 text-white placeholder:text-white/50"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={isDisabled}
+            className="w-full bg-white text-black hover:bg-white/90"
+          >
+            {loading === "email" ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              "Sign In"
+            )}
+          </Button>
+        </form>
+        <div className="mt-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-white/30" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-transparent px-2 text-white/80">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          <Button
+            onClick={onGithubSignIn}
+            disabled={isDisabled}
+            variant="outline"
+            className="w-full mt-4 bg-white/10 border-white/30 text-white hover:bg-white/20"
+          >
+            {loading === "github" ? (
+              <Loader2 className="mr-2 size-5 top-2.5 left-2.5 absolute animate-spin" />
+            ) : (
+              <FaGithub className="mr-2 size-5 top-2.5 left-2.5 absolute" />
+            )}
+            Continue with Github
+          </Button>
+        </div>
+        <p className="text-xs text-white/80 mt-4">
+          Don&apos;t have an account?{" "}
+          <Link href={`/${lang}/sign-up`}>
+            <span className="text-sky-300 hover:underline">Sign up</span>
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
