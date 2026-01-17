@@ -14,12 +14,9 @@ test.describe("AI Features", () => {
     await resetDatabase();
   });
 
-  test("should generate image from prompt", async ({ page }) => {
-    // Skip if API token not configured
-    test.skip(
-      !process.env.REPLICATE_API_TOKEN,
-      "REPLICATE_API_TOKEN not configured - skipping AI test"
-    );
+  (!process.env.REPLICATE_API_TOKEN ? test.skip : test)(
+    "should generate image from prompt",
+    async ({ page }) => {
 
     const user = await createTestUser();
     const project = await createTestProject(user.id);
@@ -56,11 +53,9 @@ test.describe("AI Features", () => {
     expect(updatedProject).not.toBeNull();
   });
 
-  test("should handle AI generation error gracefully", async ({ page }) => {
-    test.skip(
-      !process.env.REPLICATE_API_TOKEN,
-      "REPLICATE_API_TOKEN not configured - skipping AI test"
-    );
+  (!process.env.REPLICATE_API_TOKEN ? test.skip : test)(
+    "should handle AI generation error gracefully",
+    async ({ page }) => {
 
     const user = await createTestUser();
     const project = await createTestProject(user.id);

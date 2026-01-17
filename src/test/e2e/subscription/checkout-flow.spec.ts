@@ -17,7 +17,7 @@ test.describe("Subscription Checkout Flow", () => {
     await resetDatabase();
   });
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should create checkout session",
     async ({ page }) => {
       const user = await createTestUser();
@@ -47,18 +47,20 @@ test.describe("Subscription Checkout Flow", () => {
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should require authentication for checkout",
     async ({ request }) => {
       // Try to create checkout session without authentication
-      const { status, body } = await request.post("/api/subscriptions/checkout");
+      const response = await request.post("/api/subscriptions/checkout");
+      const status = response.status();
+      const body = await response.json().catch(() => ({}));
 
       expect(status).toBe(401);
       expect(body).toHaveProperty("error");
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should create checkout session with user email",
     async ({ page }) => {
       const user = await createTestUser({ email: `test-${Date.now()}@example.com` });

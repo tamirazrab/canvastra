@@ -27,10 +27,11 @@ async function globalSetup(config: FullConfig): Promise<void> {
     await verifyTestDatabase();
     console.log("✅ Test database verified\n");
 
-    // Reset database to ensure clean state
-    console.log("[3/3] Resetting database...");
+    // Reset database to ensure clean state (truncate existing data)
+    // Note: If no tables are found, that's fine - migrations just ran
+    console.log("[3/3] Resetting database (truncating data)...");
     await resetDatabase();
-    console.log("✅ Database reset completed\n");
+    console.log("✅ Database reset completed (or no tables to reset)\n");
   } catch (error) {
     console.error("\n❌ Global setup failed:");
     console.error(error);

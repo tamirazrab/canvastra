@@ -18,7 +18,7 @@ test.describe("Payment Failures", () => {
     await resetDatabase();
   });
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should handle expired subscription",
     async ({ page }) => {
       const user = await createTestUser();
@@ -53,7 +53,7 @@ test.describe("Payment Failures", () => {
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should handle canceled subscription",
     async ({ page }) => {
       const user = await createTestUser();
@@ -84,7 +84,7 @@ test.describe("Payment Failures", () => {
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should handle incomplete subscription",
     async ({ page }) => {
       const user = await createTestUser();

@@ -14,7 +14,7 @@ test.describe("OAuth Authentication", () => {
     await resetDatabase();
   });
 
-  test.skip(!testEnvConfig.auth.github.enabled, "GitHub OAuth not configured")(
+  (!testEnvConfig.auth.github.enabled ? test.skip : test)(
     "should redirect to GitHub OAuth",
     async ({ page }) => {
       const authPage = new AuthPage(page);
@@ -33,7 +33,7 @@ test.describe("OAuth Authentication", () => {
     },
   );
 
-  test.skip(!testEnvConfig.auth.google.enabled, "Google OAuth not configured")(
+  (!testEnvConfig.auth.google.enabled ? test.skip : test)(
     "should redirect to Google OAuth",
     async ({ page }) => {
       const authPage = new AuthPage(page);
@@ -52,7 +52,7 @@ test.describe("OAuth Authentication", () => {
     },
   );
 
-  test.skip(!testEnvConfig.auth.github.enabled, "GitHub OAuth not configured")(
+  (!testEnvConfig.auth.github.enabled ? test.skip : test)(
     "should show GitHub button on sign-up page",
     async ({ page }) => {
       const authPage = new AuthPage(page);
@@ -62,7 +62,7 @@ test.describe("OAuth Authentication", () => {
     },
   );
 
-  test.skip(!testEnvConfig.auth.google.enabled, "Google OAuth not configured")(
+  (!testEnvConfig.auth.google.enabled ? test.skip : test)(
     "should show Google button on sign-up page",
     async ({ page }) => {
       const authPage = new AuthPage(page);

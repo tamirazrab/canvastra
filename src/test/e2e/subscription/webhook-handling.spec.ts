@@ -21,7 +21,7 @@ test.describe("Stripe Webhook Handling", () => {
     await resetDatabase();
   });
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should handle checkout.session.completed webhook",
     async ({ request }) => {
       const user = await createTestUser();
@@ -61,7 +61,7 @@ test.describe("Stripe Webhook Handling", () => {
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should handle invoice.payment_succeeded webhook",
     async ({ request }) => {
       const user = await createTestUser();
@@ -117,7 +117,7 @@ test.describe("Stripe Webhook Handling", () => {
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should reject webhook with invalid signature",
     async ({ request }) => {
       const webhookEvent = createCheckoutSessionCompletedEvent({
@@ -139,7 +139,7 @@ test.describe("Stripe Webhook Handling", () => {
     },
   );
 
-  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
+  (shouldSkipStripeTest() ? test.skip : test)(
     "should reject webhook without signature",
     async ({ request }) => {
       const webhookEvent = createCheckoutSessionCompletedEvent({

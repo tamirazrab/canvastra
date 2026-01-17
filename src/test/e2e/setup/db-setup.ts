@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import * as schema from "@/bootstrap/boundaries/db/schema";
 import {
@@ -23,8 +23,11 @@ import { execSync } from "child_process";
 
 const TEST_DATABASE_URL = testEnv.TEST_DATABASE_URL;
 
-const sqlClient = neon(TEST_DATABASE_URL);
+// Use postgres-js for E2E tests against local Postgres.
+// This avoids Neon HTTP connection pooling issues.
+const sqlClient = postgres(TEST_DATABASE_URL);
 export const testDb = drizzle(sqlClient, { schema });
+export { sqlClient }; // Export for use in helpers
 
 /**
  * Check if a table exists in the database.
@@ -66,78 +69,54 @@ export async function resetDatabase(): Promise<void> {
     "user",
   ];
 
-  // Check which tables exist
+  // Check which tables exist using raw SQL (Drizzle can't see tables due to connection pooling)
   const existingTables: string[] = [];
   for (const table of tables) {
-    if (await tableExists(table)) {
+    try {
+      // Try a simple query to see if table exists
+      await sqlClient.unsafe(`SELECT 1 FROM "${table}" LIMIT 1`);
       existingTables.push(table);
+    } catch (error: any) {
+      // Table doesn't exist or not visible - skip it
+      const errorMsg = error?.message || String(error);
+      if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+        // Some other error - log it but continue
+        console.warn(`  ⚠️  Error checking table "${table}": ${errorMsg}`);
+      }
     }
   }
 
   if (existingTables.length === 0) {
-    console.log("No tables found to reset. Database may be empty or not migrated.");
+    // This is fine - tables might not be visible yet due to connection pooling
+    // or migrations just ran. Just continue - tests will create data as needed.
     return;
   }
 
   try {
-    // Try to truncate all existing tables in one statement with CASCADE
+    // Try to truncate all existing tables in one statement with CASCADE using raw SQL
     // This is the most efficient approach and handles foreign keys automatically
     const tableList = existingTables.map((t) => `"${t}"`).join(", ");
-    await testDb.execute(sql.raw(`TRUNCATE TABLE ${tableList} CASCADE;`));
-  } catch (error) {
-    // If TRUNCATE fails (e.g., permission issue), 
-    // fall back to DELETE in correct order to respect foreign keys
-    console.warn(
-      "TRUNCATE CASCADE failed, falling back to DELETE statements:",
-      error instanceof Error ? error.message : error,
-    );
+    await sqlClient.unsafe(`TRUNCATE TABLE ${tableList} CASCADE;`);
+    console.log(`  ✅ Truncated ${existingTables.length} table(s): ${existingTables.join(", ")}`);
+  } catch (error: any) {
+    // If TRUNCATE fails, fall back to DELETE using raw SQL
+    const errorMsg = error?.message || String(error);
+    console.warn(`  ⚠️  TRUNCATE failed, using DELETE: ${errorMsg}`);
 
     // Delete in correct order: child tables first, then parent tables
-    // This respects foreign key constraints
-    // Use Drizzle ORM for DELETE operations
-    const { accounts, sessions, subscriptions, projects, verification, authenticators, users } = schema;
+    // Use raw SQL since Drizzle can't see tables
+    const deleteOrder = [
+      "account", "session", "subscription", "project", "verification", "authenticator", "user"
+    ];
 
-    // Delete in correct order: child tables first, then parent tables
-    try {
-      await testDb.delete(accounts);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from accounts:`, deleteError instanceof Error ? deleteError.message : deleteError);
-    }
-
-    try {
-      await testDb.delete(sessions);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from sessions:`, deleteError instanceof Error ? deleteError.message : deleteError);
-    }
-
-    try {
-      await testDb.delete(subscriptions);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from subscriptions:`, deleteError instanceof Error ? deleteError.message : deleteError);
-    }
-
-    try {
-      await testDb.delete(projects);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from projects:`, deleteError instanceof Error ? deleteError.message : deleteError);
-    }
-
-    try {
-      await testDb.delete(verification);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from verification:`, deleteError instanceof Error ? deleteError.message : deleteError);
-    }
-
-    try {
-      await testDb.delete(authenticators);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from authenticators:`, deleteError instanceof Error ? deleteError.message : deleteError);
-    }
-
-    try {
-      await testDb.delete(users);
-    } catch (deleteError) {
-      console.warn(`Failed to delete from users:`, deleteError instanceof Error ? deleteError.message : deleteError);
+    for (const table of deleteOrder) {
+      if (existingTables.includes(table)) {
+        try {
+          await sqlClient.unsafe(`DELETE FROM "${table}"`);
+        } catch (deleteError: any) {
+          console.warn(`  ⚠️  Failed to delete from ${table}: ${deleteError?.message || deleteError}`);
+        }
+      }
     }
   }
 }
@@ -145,50 +124,63 @@ export async function resetDatabase(): Promise<void> {
 /**
  * Drop all tables in the test database.
  * This ensures a clean state before running migrations.
+ * NOTE: We don't actually drop tables - we just truncate them.
+ * This avoids connection pooling issues where dropped tables aren't visible
+ * to other connections immediately.
  */
 async function dropAllTables(): Promise<void> {
-  console.log("Dropping all existing tables...");
+  console.log("Preparing database for migrations...");
 
   try {
-    // Get all table names from the public schema
-    const tablesResult = await testDb.execute(
-      sql`
-        SELECT tablename 
-        FROM pg_tables 
-        WHERE schemaname = 'public'
-        ORDER BY tablename
-      `
-    );
-    const tables = tablesResult.rows.map((row: any) => row.tablename as string);
+    // Get all table names from the public schema using raw SQL
+    const tablesResult = await sqlClient.unsafe(`
+      SELECT tablename 
+      FROM pg_tables 
+      WHERE schemaname = 'public'
+      ORDER BY tablename
+    `);
+
+    // Handle both array and object results
+    const tables = Array.isArray(tablesResult)
+      ? tablesResult.map((row: any) => row.tablename || row.tablename)
+      : [];
 
     if (tables.length === 0) {
-      console.log("  ℹ️  No tables to drop");
+      console.log("  ℹ️  No existing tables found - will create fresh tables");
       return;
     }
 
-    console.log(`  Found ${tables.length} table(s) to drop: ${tables.join(", ")}`);
+    console.log(`  Found ${tables.length} existing table(s): ${tables.join(", ")}`);
+    console.log("  ℹ️  Truncating instead of dropping to avoid connection pooling issues");
 
-    // Drop tables with CASCADE to handle foreign keys
-    // Use testDb.execute() with sql.raw() instead of sqlClient.unsafe()
-    for (const table of tables) {
-      try {
-        await testDb.execute(sql.raw(`DROP TABLE IF EXISTS "public"."${table}" CASCADE;`));
-        console.log(`  ✅ Dropped table: ${table}`);
-      } catch (error: any) {
-        console.warn(`  ⚠️  Failed to drop table ${table}: ${error.message}`);
+    // Truncate all tables instead of dropping them
+    // This ensures tables always exist and are visible to all connections
+    const tableList = tables.map((t: string) => `"${t}"`).join(", ");
+    try {
+      await sqlClient.unsafe(`TRUNCATE TABLE ${tableList} CASCADE;`);
+      console.log(`  ✅ Truncated ${tables.length} table(s)`);
+    } catch (error: any) {
+      console.warn(`  ⚠️  Could not truncate tables: ${error.message}`);
+      // If truncate fails, try dropping (but this might cause visibility issues)
+      console.log("  ⚠️  Falling back to dropping tables (may cause connection issues)...");
+      for (const table of tables) {
+        try {
+          await sqlClient.unsafe(`DROP TABLE IF EXISTS "public"."${table}" CASCADE;`);
+        } catch (dropError: any) {
+          console.warn(`  ⚠️  Failed to drop table ${table}: ${dropError.message}`);
+        }
       }
     }
-
-    console.log("✅ All tables dropped");
   } catch (error: any) {
-    console.warn(`⚠️  Error dropping tables: ${error.message}`);
-    // Don't throw - continue with migrations even if drop fails
+    console.warn(`⚠️  Error preparing database: ${error.message}`);
+    // Don't throw - continue with migrations even if this fails
   }
 }
 
 /**
- * Run database migrations on the test database using drizzle-kit migrate.
+ * Run database migrations on the test database by reading SQL files directly.
  * Drops all existing tables first to ensure a clean state.
+ * This approach is more reliable than drizzle-kit migrate for test databases.
  */
 export async function runMigrations(): Promise<void> {
   console.log("Running migrations on test database...");
@@ -197,56 +189,138 @@ export async function runMigrations(): Promise<void> {
   // Drop all existing tables first for a clean migration
   await dropAllTables();
 
-  console.log("\nRunning drizzle-kit migrate...");
+  console.log("\nRunning migrations from SQL files...");
 
   try {
-    // Set TEST_DATABASE_URL as DATABASE_URL for drizzle-kit
-    // This way drizzle-kit will use the test database
-    const env = {
-      ...process.env,
-      DATABASE_URL: TEST_DATABASE_URL,
-    };
+    // Read and execute all migration files in order
+    const drizzleFolder = path.join(process.cwd(), "drizzle");
+    const migrationFiles = fs
+      .readdirSync(drizzleFolder)
+      .filter((file) => file.endsWith(".sql"))
+      .sort();
 
-    // Run drizzle-kit migrate
-    // This will read the drizzle config and apply migrations to TEST_DATABASE_URL
-    console.log("Executing: bunx drizzle-kit migrate");
-    execSync("bunx drizzle-kit migrate", {
-      env,
-      stdio: "inherit", // Show output in console
-      cwd: process.cwd(),
-    });
-
-    console.log("✅ Drizzle-kit migrate completed successfully");
-
-    // Small delay to ensure database processes all changes
-    console.log("\nWaiting for database to process changes...");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Verify that key tables were created
-    console.log("\nVerifying tables were created...");
-
-    // Check what tables actually exist
-    try {
-      const allTablesResult = await testDb.execute(
-        sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;`
-      );
-      const allTables = allTablesResult.rows.map((row: any) => row.table_name);
-      console.log(`  📋 All tables in public schema (${allTables.length}): ${allTables.length > 0 ? allTables.join(", ") : "NONE"}`);
-    } catch (error: any) {
-      console.warn(`  ⚠️  Could not list tables: ${error.message}`);
+    if (migrationFiles.length === 0) {
+      throw new Error("No migration files found in drizzle folder");
     }
 
-    const keyTables = ["user", "project", "session", "account"];
-    for (const tableName of keyTables) {
-      const exists = await tableExists(tableName);
-      if (exists) {
-        console.log(`  ✅ Table "${tableName}" exists`);
-      } else {
-        console.error(`  ❌ Table "${tableName}" does NOT exist!`);
-        throw new Error(`Migration verification failed: table "${tableName}" was not created`);
+    console.log(`Found ${migrationFiles.length} migration file(s)`);
+
+    let totalStatements = 0;
+
+    for (const migrationFile of migrationFiles) {
+      const filePath = path.join(drizzleFolder, migrationFile);
+      console.log(`\nReading migration file: ${migrationFile}`);
+      const migrationSQL = fs.readFileSync(filePath, "utf-8");
+
+      // Split by statement breakpoints and execute each statement
+      const statements = migrationSQL
+        .split("--> statement-breakpoint")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith("--"));
+
+      console.log(
+        `Found ${statements.length} SQL statements in ${migrationFile}`,
+      );
+      totalStatements += statements.length;
+
+      for (let i = 0; i < statements.length; i++) {
+        const statement = statements[i].trim();
+        if (!statement) continue;
+
+        console.log(
+          `Executing statement ${i + 1}/${statements.length} from ${migrationFile}...`,
+        );
+        // Show first 100 chars of statement for debugging
+        const preview = statement.substring(0, 100).replace(/\s+/g, " ");
+        console.log(`  SQL: ${preview}...`);
+
+        try {
+          // Execute using the test database connection
+          // sqlClient is the neon client - use .unsafe() for raw SQL
+          // Ensure we're using the public schema
+          await sqlClient.unsafe(statement);
+          console.log(`  ✅ Success`);
+        } catch (error: any) {
+          // Ignore "already exists" errors for tables/constraints
+          if (
+            error?.message?.includes("already exists") ||
+            error?.code === "42P07" || // duplicate_table
+            error?.code === "42710" // duplicate_object
+          ) {
+            console.log(`  ⚠️  Skipped (already exists): ${error.message}`);
+            continue;
+          }
+          console.error(`  ❌ Error: ${error.message}`);
+          console.error(`  Code: ${error.code}`);
+          throw error;
+        }
       }
     }
-    console.log("✅ All key tables verified");
+
+    console.log(
+      `\n✅ All migrations completed successfully! (${totalStatements} statements executed)`,
+    );
+
+    // Small delay to ensure database processes all changes
+    // Neon HTTP may use connection pooling, so we need to wait for changes to be visible
+    console.log("\nWaiting for database to process changes and become visible...");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Force a connection refresh by querying the database
+    try {
+      await sqlClient.unsafe(`SELECT current_database(), current_schema()`);
+      console.log("  ✅ Database connection refreshed");
+    } catch (error: any) {
+      console.warn(`  ⚠️  Could not refresh connection: ${error.message}`);
+    }
+
+    // Verify that key tables were created and are accessible
+    // Retry with delays to handle Neon HTTP connection pooling
+    console.log("\nVerifying tables were created and are accessible...");
+
+    const keyTables = ["user", "account", "session", "project"];
+    const maxRetries = 10;
+    const retryDelay = 1000; // 1 second
+
+    for (const tableName of keyTables) {
+      let verified = false;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          // Try a simple SELECT to verify table exists and is accessible
+          await sqlClient.unsafe(`SELECT 1 FROM "${tableName}" LIMIT 1`);
+          console.log(`  ✅ Table "${tableName}" is accessible (attempt ${attempt + 1})`);
+          verified = true;
+          break;
+        } catch (error: any) {
+          const errorMsg = error?.message || error?.toString() || "unknown error";
+          if (errorMsg.includes("does not exist") || errorMsg.includes("relation") || error?.code === "42P01") {
+            if (attempt < maxRetries - 1) {
+              console.log(`  ⏳ Table "${tableName}" not visible yet (attempt ${attempt + 1}/${maxRetries}), waiting...`);
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
+              continue;
+            } else {
+              throw new Error(
+                `Table "${tableName}" is not accessible after ${maxRetries} attempts. ` +
+                `This suggests a connection pooling issue with Neon HTTP.`
+              );
+            }
+          } else {
+            // Some other error - might be permissions or connection issue
+            console.warn(`  ⚠️  Table "${tableName}" query failed: ${errorMsg}`);
+            if (attempt < maxRetries - 1) {
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
+              continue;
+            }
+            throw error;
+          }
+        }
+      }
+      if (!verified) {
+        throw new Error(`Failed to verify table "${tableName}" after ${maxRetries} attempts`);
+      }
+    }
+
+    console.log("✅ All key tables verified and accessible");
   } catch (error: any) {
     console.error("❌ Migration failed:", error.message || error);
     throw error;

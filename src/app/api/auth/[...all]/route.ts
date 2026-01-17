@@ -5,10 +5,11 @@ import { auth } from "@/auth";
 // This is called at runtime, not module load time, so env vars are available
 function getAuthInstance() {
   // Check if we're in test mode
-  // Test mode is when TEST_DATABASE_URL is set AND DATABASE_URL matches it
+  // Test mode is when TEST_DATABASE_URL is set (regardless of DATABASE_URL)
+  // This is more reliable because DATABASE_URL might be set from .env.local
   const testDbUrl = process.env.TEST_DATABASE_URL;
   const dbUrl = process.env.DATABASE_URL;
-  const isTestMode = !!testDbUrl && testDbUrl === dbUrl;
+  const isTestMode = !!testDbUrl;
 
   if (isTestMode) {
     try {
@@ -16,7 +17,7 @@ function getAuthInstance() {
       const testAuthModule = require("@/auth.test");
       const testAuth = testAuthModule.testAuth;
       console.log(
-        `[auth-route] ✅ Using TEST auth. TEST_DATABASE_URL matches DATABASE_URL`,
+        `[auth-route] ✅ Using TEST auth. TEST_DATABASE_URL is set`,
       );
       return testAuth;
     } catch (error) {
@@ -27,25 +28,9 @@ function getAuthInstance() {
       return auth;
     }
   } else {
-    // Log which database we're using for debugging
-    if (testDbUrl && dbUrl && testDbUrl !== dbUrl) {
-      console.warn(
-        `[auth-route] ⚠️  WARNING: TEST_DATABASE_URL is set but DATABASE_URL is different!`,
-      );
-      console.warn(
-        `[auth-route] TEST_DATABASE_URL: ${testDbUrl.substring(0, 30)}...`,
-      );
-      console.warn(
-        `[auth-route] DATABASE_URL: ${dbUrl.substring(0, 30)}...`,
-      );
-      console.warn(
-        `[auth-route] Better Auth will use PRODUCTION database! This will cause test failures!`,
-      );
-    } else {
-      console.log(
-        `[auth-route] Using PRODUCTION auth. TEST_DATABASE_URL: ${testDbUrl ? "SET" : "NOT SET"}`,
-      );
-    }
+    console.log(
+      `[auth-route] Using PRODUCTION auth. TEST_DATABASE_URL: ${testDbUrl ? "SET" : "NOT SET"}`,
+    );
     return auth;
   }
 }

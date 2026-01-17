@@ -1,4 +1,4 @@
-import { testDb } from "../setup/db-setup";
+import { testDb, sqlClient } from "../setup/db-setup";
 import { subscriptions } from "@/bootstrap/boundaries/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
@@ -46,7 +46,28 @@ export async function createTestSubscription(
     updatedAt: overrides?.updatedAt || new Date(),
   };
 
-  await testDb.insert(subscriptions).values(subscriptionData);
+  // Prefer raw SQL via sqlClient to avoid Drizzle/neon HTTP visibility issues
+  try {
+    await sqlClient.unsafe(
+      `INSERT INTO "subscription"
+        ("id", "userId", "subscriptionId", "customerId", "priceId", "status", "currentPeriodEnd", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        subscriptionData.id,
+        subscriptionData.userId,
+        subscriptionData.subscriptionId,
+        subscriptionData.customerId,
+        subscriptionData.priceId,
+        subscriptionData.status,
+        subscriptionData.currentPeriodEnd,
+        subscriptionData.createdAt,
+        subscriptionData.updatedAt,
+      ],
+    );
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    throw new Error(`Failed to create subscription: ${msg}`);
+  }
 
   return {
     id: subscriptionData.id,
@@ -65,28 +86,37 @@ export async function createTestSubscription(
  * Get subscription by user ID.
  */
 export async function getSubscriptionByUserId(userId: string): Promise<TestSubscription | null> {
-  const result = await testDb
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.userId, userId))
-    .limit(1);
+  try {
+    const result = await sqlClient.unsafe(
+      `SELECT "id", "userId", "subscriptionId", "customerId", "priceId", "status",
+              "currentPeriodEnd", "createdAt", "updatedAt"
+       FROM "subscription"
+       WHERE "userId" = $1
+       LIMIT 1`,
+      [userId],
+    );
 
-  if (result.length === 0) {
-    return null;
+    const rows = Array.isArray(result) ? result : result ? [result] : [];
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const subscription = rows[0] as any;
+    return {
+      id: subscription.id,
+      userId: subscription.userId,
+      subscriptionId: subscription.subscriptionId,
+      customerId: subscription.customerId,
+      priceId: subscription.priceId,
+      status: subscription.status,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      createdAt: subscription.createdAt,
+      updatedAt: subscription.updatedAt,
+    };
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    throw new Error(`Failed to get subscription by userId: ${msg}`);
   }
-
-  const subscription = result[0];
-  return {
-    id: subscription.id,
-    userId: subscription.userId,
-    subscriptionId: subscription.subscriptionId,
-    customerId: subscription.customerId,
-    priceId: subscription.priceId,
-    status: subscription.status,
-    currentPeriodEnd: subscription.currentPeriodEnd,
-    createdAt: subscription.createdAt,
-    updatedAt: subscription.updatedAt,
-  };
 }
 
 /**
@@ -95,28 +125,37 @@ export async function getSubscriptionByUserId(userId: string): Promise<TestSubsc
 export async function getSubscriptionBySubscriptionId(
   subscriptionId: string,
 ): Promise<TestSubscription | null> {
-  const result = await testDb
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.subscriptionId, subscriptionId))
-    .limit(1);
+  try {
+    const result = await sqlClient.unsafe(
+      `SELECT "id", "userId", "subscriptionId", "customerId", "priceId", "status",
+              "currentPeriodEnd", "createdAt", "updatedAt"
+       FROM "subscription"
+       WHERE "subscriptionId" = $1
+       LIMIT 1`,
+      [subscriptionId],
+    );
 
-  if (result.length === 0) {
-    return null;
+    const rows = Array.isArray(result) ? result : result ? [result] : [];
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const subscription = rows[0] as any;
+    return {
+      id: subscription.id,
+      userId: subscription.userId,
+      subscriptionId: subscription.subscriptionId,
+      customerId: subscription.customerId,
+      priceId: subscription.priceId,
+      status: subscription.status,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      createdAt: subscription.createdAt,
+      updatedAt: subscription.updatedAt,
+    };
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    throw new Error(`Failed to get subscription by subscriptionId: ${msg}`);
   }
-
-  const subscription = result[0];
-  return {
-    id: subscription.id,
-    userId: subscription.userId,
-    subscriptionId: subscription.subscriptionId,
-    customerId: subscription.customerId,
-    priceId: subscription.priceId,
-    status: subscription.status,
-    currentPeriodEnd: subscription.currentPeriodEnd,
-    createdAt: subscription.createdAt,
-    updatedAt: subscription.updatedAt,
-  };
 }
 
 /**
@@ -127,21 +166,34 @@ export async function updateSubscriptionStatus(
   status: string,
   currentPeriodEnd?: Date,
 ): Promise<void> {
-  await testDb
-    .update(subscriptions)
-    .set({
-      status,
-      currentPeriodEnd: currentPeriodEnd || undefined,
-      updatedAt: new Date(),
-    })
-    .where(eq(subscriptions.subscriptionId, subscriptionId));
+  try {
+    await sqlClient.unsafe(
+      `UPDATE "subscription"
+       SET "status" = $1,
+           "currentPeriodEnd" = $2,
+           "updatedAt" = $3
+       WHERE "subscriptionId" = $4`,
+      [status, currentPeriodEnd ?? null, new Date(), subscriptionId],
+    );
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    throw new Error(`Failed to update subscription status: ${msg}`);
+  }
 }
 
 /**
  * Delete subscription by user ID.
  */
 export async function deleteSubscriptionByUserId(userId: string): Promise<void> {
-  await testDb.delete(subscriptions).where(eq(subscriptions.userId, userId));
+  try {
+    await sqlClient.unsafe(
+      `DELETE FROM "subscription" WHERE "userId" = $1`,
+      [userId],
+    );
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    throw new Error(`Failed to delete subscription by userId: ${msg}`);
+  }
 }
 
 /**

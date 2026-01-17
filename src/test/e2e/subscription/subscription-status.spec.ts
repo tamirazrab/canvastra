@@ -102,7 +102,8 @@ test.describe("Subscription Status", () => {
 
   test("should require authentication for subscription status", async ({ request }) => {
     // Try to get subscription status without authentication
-    const { status } = await request.get("/api/subscriptions/current");
+    const response = await request.get("/api/subscriptions/current");
+    const status = response.status();
 
     expect(status).toBe(401);
   });

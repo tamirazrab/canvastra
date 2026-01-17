@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  postgres-e2e:
+    image: postgres:16
+    container_name: canvastra-e2e-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: canvastra
+      POSTGRES_PASSWORD: canvastra
+      POSTGRES_DB: canvastra_e2e
+    ports:
+      - "5433:5432" # host:container
+    volumes:
+      - pgdata-e2e:/var/lib/postgresql/data
+
+volumes:
+  pgdata-e2e:
+
+
+

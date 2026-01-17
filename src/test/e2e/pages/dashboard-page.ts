@@ -109,7 +109,7 @@ export class DashboardPage {
    * Get invoice rows from table.
    */
   async getInvoiceRows(): Promise<Locator> {
-    return this.invoiceTable.locator("tbody tr, [role="row"]");
+    return this.invoiceTable.locator("tbody tr, [role='row']");
   }
 
   /**
