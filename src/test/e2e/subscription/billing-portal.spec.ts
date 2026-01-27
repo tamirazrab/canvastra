@@ -17,7 +17,7 @@ test.describe("Billing Portal", () => {
     await resetDatabase();
   });
 
-  (shouldSkipStripeTest() ? test.skip : test)(
+  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
     "should create billing portal session for user with subscription",
     async ({ page }) => {
       const user = await createTestUser();
@@ -51,7 +51,7 @@ test.describe("Billing Portal", () => {
     },
   );
 
-  (shouldSkipStripeTest() ? test.skip : test)(
+  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
     "should return 404 for user without subscription",
     async ({ page }) => {
       const user = await createTestUser();
@@ -80,12 +80,11 @@ test.describe("Billing Portal", () => {
     },
   );
 
-  (shouldSkipStripeTest() ? test.skip : test)(
+  test.skip(shouldSkipStripeTest(), getStripeSkipReason())(
     "should require authentication for billing portal",
     async ({ request }) => {
       // Try to create billing portal session without authentication
-      const response = await request.post("/api/subscriptions/billing");
-      const status = response.status();
+      const { status } = await request.post("/api/subscriptions/billing");
 
       expect(status).toBe(401);
     },

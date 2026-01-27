@@ -57,10 +57,14 @@ async function seedCanvaUsers(db: ReturnType<typeof drizzle>) {
     );
 
     const successful = insertedUsers.filter((u) => u !== null);
-    console.log(`Seeded ${successful.length} canva users`);
 
+    const userIds = successful.map((u) => u.id);
+    
+    console.log(`Seeded ${successful.length} canva users`);
+    
     return {
       users: successful,
+      userIds
     };
   } catch (error) {
     console.error("Error seeding canva users:", error);
@@ -68,7 +72,7 @@ async function seedCanvaUsers(db: ReturnType<typeof drizzle>) {
   }
 }
 
-async function seedCanvaProjects(db: ReturnType<typeof drizzle>) {
+async function seedCanvaProjects(db: ReturnType<typeof drizzle>, userIds : string[]) {
   try {
     // Read template JSON files
     const carSaleJson = fs.readFileSync(
@@ -93,7 +97,7 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>) {
       {
         id: "project-001",
         name: "Car Sale Banner",
-        userId: "demo-user-001",
+        userId: userIds[0],
         json: carSaleJson,
         height: 1200,
         width: 900,
@@ -106,7 +110,7 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>) {
       {
         id: "project-002",
         name: "Coming Soon Template",
-        userId: "demo-user-001",
+        userId: userIds[0],
         json: comingSoonJson,
         height: 1200,
         width: 900,
@@ -119,7 +123,7 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>) {
       {
         id: "project-003",
         name: "Flash Sale Template",
-        userId: "demo-user-001",
+        userId: userIds[0],
         json: flashSaleJson,
         height: 1200,
         width: 900,
@@ -132,7 +136,7 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>) {
       {
         id: "project-004",
         name: "Travel Poster",
-        userId: "demo-user-001",
+        userId: userIds[0],
         json: travelJson,
         height: 1200,
         width: 900,
@@ -145,7 +149,7 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>) {
       {
         id: "project-005",
         name: "My First Design",
-        userId: "demo-user-001",
+        userId: userIds[0],
         json: JSON.stringify({
           version: "5.3.0",
           objects: [
@@ -224,8 +228,8 @@ async function main() {
 
   // Seed canva-clone tables (user, project, subscription)
   try {
-    await seedCanvaUsers(db);
-    await seedCanvaProjects(db);
+    const users = await seedCanvaUsers(db);
+    await seedCanvaProjects(db, users.userIds);
   } catch (error) {
     console.warn(
       "Warning: Could not seed canva-clone tables:",
