@@ -13,5 +13,7 @@ export default async function getTemplatesUseCase(paginationParams: {
 }): Promise<ApiEither<WithPagination<Template>>> {
   const repo = diResolve<TemplateRepository>(templateModuleKey, templateRepoKey);
 
-  return repo.getPaginated(paginationParams)();
+  const limit = Math.max(1, paginationParams.limit ?? 5);
+  const skip = Math.max(0, paginationParams.skip ?? 0);
+  return repo.getPaginated({ limit, skip })();
 }
