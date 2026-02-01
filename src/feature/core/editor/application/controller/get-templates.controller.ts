@@ -17,7 +17,7 @@ export default async function getTemplatesController(paginationParams: {
   const skip = paginationParams.skip ?? 0;
 
   return unstable_cache(
-    async () => getTemplatesUseCase({ limit, skip })(),
+    async () => getTemplatesUseCase({ limit, skip }),
     ["templates", String(limit), String(skip)],
     { revalidate: 60 },
   )();
