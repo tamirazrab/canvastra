@@ -1,5 +1,5 @@
 import { testDb, sqlClient } from "../setup/db-setup";
-import { users, projects, accounts } from "@/bootstrap/boundaries/db/schema";
+import { users, projects, accounts, templates } from "@/bootstrap/boundaries/db/schema";
 import { eq, sql, and, like } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 type UserInsert = InferInsertModel<typeof users>;
 type ProjectInsert = InferInsertModel<typeof projects>;
 type AccountInsert = InferInsertModel<typeof accounts>;
+type TemplateInsert = InferInsertModel<typeof templates>;
 
 /**
  * Database helper utilities for E2E tests.
@@ -22,6 +23,14 @@ export interface TestUser {
 export interface TestProject {
   id: string;
   userId: string;
+  name: string;
+  json: string;
+  width: number;
+  height: number;
+}
+
+export interface TestTemplate {
+  id: string;
   name: string;
   json: string;
   width: number;
@@ -302,6 +311,56 @@ export async function createTestUser(
     email: userData.email,
     name: userData.name,
     password, // Return plain password for use in tests
+  };
+}
+
+/**
+ * Create a test template in the database (no user required).
+ */
+export async function createTestTemplate(
+  overrides?: Partial<TemplateInsert>,
+): Promise<TestTemplate> {
+  const templateId = overrides?.id || crypto.randomUUID();
+  const now = overrides?.createdAt || overrides?.updatedAt || new Date();
+  const templateData: TemplateInsert = {
+    id: templateId,
+    name: overrides?.name || `Test Template ${Date.now()}`,
+    json: overrides?.json ?? JSON.stringify({ objects: [] }),
+    width: overrides?.width ?? 1920,
+    height: overrides?.height ?? 1080,
+    thumbnailUrl: overrides?.thumbnailUrl ?? null,
+    isPro: overrides?.isPro ?? false,
+    createdAt: overrides?.createdAt ?? now,
+    updatedAt: overrides?.updatedAt ?? now,
+  };
+
+  try {
+    await sqlClient.unsafe(
+      `INSERT INTO "template" ("id", "name", "json", "width", "height", "thumbnailUrl", "isPro", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        templateData.id,
+        templateData.name,
+        templateData.json,
+        templateData.width,
+        templateData.height,
+        templateData.thumbnailUrl ?? null,
+        templateData.isPro ?? false,
+        templateData.createdAt,
+        templateData.updatedAt,
+      ],
+    );
+  } catch (error: any) {
+    const errorMsg = error?.message || error?.toString() || String(error);
+    throw new Error(`Failed to create template: ${errorMsg}`);
+  }
+
+  return {
+    id: templateId,
+    name: templateData.name,
+    json: templateData.json,
+    width: templateData.width,
+    height: templateData.height,
   };
 }
 

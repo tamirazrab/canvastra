@@ -127,17 +127,18 @@ export async function teardownDatabaseIsolation(): Promise<void> {
  * Checks that database is empty or reset.
  */
 export async function verifyDatabaseIsolation(): Promise<void> {
-  const { users, projects, subscriptions } = await import("@/bootstrap/boundaries/db/schema");
+  const { users, projects, subscriptions, templates } = await import("@/bootstrap/boundaries/db/schema");
   const { eq, count } = await import("drizzle-orm");
 
   const userCount = await testDb.select({ count: count() }).from(users);
   const projectCount = await testDb.select({ count: count() }).from(projects);
   const subscriptionCount = await testDb.select({ count: count() }).from(subscriptions);
+  const templateCount = await testDb.select({ count: count() }).from(templates);
 
-  if (userCount[0]?.count > 0 || projectCount[0]?.count > 0 || subscriptionCount[0]?.count > 0) {
+  if (userCount[0]?.count > 0 || projectCount[0]?.count > 0 || subscriptionCount[0]?.count > 0 || templateCount[0]?.count > 0) {
     console.warn(
       `Database isolation warning: Found existing data. ` +
-      `Users: ${userCount[0]?.count}, Projects: ${projectCount[0]?.count}, Subscriptions: ${subscriptionCount[0]?.count}`,
+      `Users: ${userCount[0]?.count}, Projects: ${projectCount[0]?.count}, Subscriptions: ${subscriptionCount[0]?.count}, Templates: ${templateCount[0]?.count}`,
     );
   }
 }

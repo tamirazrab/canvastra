@@ -163,6 +163,22 @@ export const projectsRelations = relations(projects, ({ one }) => ({
 
 export const projectsInsertSchema = createInsertSchema(projects);
 
+export const templates = pgTable("template", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  json: text("json").notNull(),
+  height: integer("height").notNull(),
+  width: integer("width").notNull(),
+  thumbnailUrl: text("thumbnailUrl"),
+  isPro: boolean("isPro"),
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
+});
+
+export const templatesInsertSchema = createInsertSchema(templates);
+
 export const subscriptions = pgTable("subscription", {
   id: text("id")
     .primaryKey()

@@ -13,11 +13,6 @@ export default interface ProjectRepository {
 
   getById(id: string, userId: string): ApiTask<Project>;
 
-  getTemplates(paginationParams: {
-    limit?: number;
-    skip?: number;
-  }): ApiTask<WithPagination<Project>>;
-
   create(params: CreateProjectParams & { userId: string }): ApiTask<Project>;
 
   update(params: UpdateProjectParams & { userId: string }): ApiTask<Project>;

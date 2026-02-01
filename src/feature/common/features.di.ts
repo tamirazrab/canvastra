@@ -23,6 +23,8 @@ import { aiModuleKey } from "@/feature/core/ai/data/ai-module-key";
 import aiModule from "@/feature/core/ai/data/module/ai-module";
 import { imageModuleKey } from "@/feature/core/image/data/image-module-key";
 import imageModule from "@/feature/core/image/data/module/image-module";
+import { templateModuleKey } from "@/feature/core/template/data/template-module-key";
+import templateModule from "@/feature/core/template/data/module/template-module";
 
 /**
  * On adding new domain module, just add it to this list
@@ -42,6 +44,7 @@ const moduleKeyToDi: Record<
   [subscriptionModuleKey]: subscriptionModule,
   [aiModuleKey]: aiModule,
   [imageModuleKey]: imageModule,
+  [templateModuleKey]: templateModule,
 };
 
 const memoizedDis: Record<string, DependencyContainer> = {};

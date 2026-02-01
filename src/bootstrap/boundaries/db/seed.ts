@@ -7,7 +7,7 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
 
-import { users, projects } from "./schema";
+import { users, projects, templates } from "./schema";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,9 +72,8 @@ async function seedCanvaUsers(db: ReturnType<typeof drizzle>) {
   }
 }
 
-async function seedCanvaProjects(db: ReturnType<typeof drizzle>, userIds : string[]) {
+async function seedTemplates(db: ReturnType<typeof drizzle>) {
   try {
-    // Read template JSON files
     const carSaleJson = fs.readFileSync(
       path.join(__dirname, "../../../../public/car_sale.json"),
       "utf8",
@@ -93,59 +92,88 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>, userIds : strin
     );
 
     const now = new Date();
-    const projectData = [
+    const templateData = [
       {
-        id: "project-001",
+        id: "template-001",
         name: "Car Sale Banner",
-        userId: userIds[0],
         json: carSaleJson,
         height: 1200,
         width: 900,
         thumbnailUrl: "/car_sale.png",
-        isTemplate: true,
         isPro: false,
         createdAt: now,
         updatedAt: now,
       },
       {
-        id: "project-002",
+        id: "template-002",
         name: "Coming Soon Template",
-        userId: userIds[0],
         json: comingSoonJson,
         height: 1200,
         width: 900,
         thumbnailUrl: "/coming_soon.png",
-        isTemplate: true,
         isPro: false,
         createdAt: now,
         updatedAt: now,
       },
       {
-        id: "project-003",
+        id: "template-003",
         name: "Flash Sale Template",
-        userId: userIds[0],
         json: flashSaleJson,
         height: 1200,
         width: 900,
         thumbnailUrl: "/flash_sale.png",
-        isTemplate: true,
         isPro: true,
         createdAt: now,
         updatedAt: now,
       },
       {
-        id: "project-004",
+        id: "template-004",
         name: "Travel Poster",
-        userId: userIds[0],
         json: travelJson,
         height: 1200,
         width: 900,
         thumbnailUrl: "/travel.png",
-        isTemplate: true,
         isPro: false,
         createdAt: now,
         updatedAt: now,
       },
+    ];
+
+    const insertedTemplates = await Promise.all(
+      templateData.map(async (template) => {
+        const existing = await db
+          .select()
+          .from(templates)
+          .where(eq(templates.id, template.id))
+          .limit(1);
+
+        if (existing.length > 0) {
+          return null;
+        }
+
+        const [inserted] = await db
+          .insert(templates)
+          .values(template)
+          .returning();
+
+        return inserted;
+      }),
+    );
+
+    const successful = insertedTemplates.filter((t) => t !== null);
+    console.log(`Seeded ${successful.length} templates`);
+
+    return { templates: successful };
+  } catch (error) {
+    console.error("Error seeding templates:", error);
+    throw error;
+  }
+}
+
+async function seedCanvaProjects(db: ReturnType<typeof drizzle>, userIds: string[]) {
+  try {
+    const now = new Date();
+    const projectData = [
       {
         id: "project-005",
         name: "My First Design",
@@ -185,7 +213,6 @@ async function seedCanvaProjects(db: ReturnType<typeof drizzle>, userIds : strin
 
     const insertedProjects = await Promise.all(
       projectData.map(async (project) => {
-        // Check if project already exists
         const existing = await db
           .select()
           .from(projects)
@@ -226,7 +253,19 @@ async function main() {
   const sql = neon(process.env.DATABASE_URL);
   const db = drizzle(sql);
 
-  // Seed canva-clone tables (user, project, subscription)
+  // Seed templates (no users required), then users and projects
+  try {
+    await seedTemplates(db);
+  } catch (error) {
+    console.warn(
+      "Warning: Could not seed templates:",
+      (error as Error).message,
+    );
+    console.log(
+      "This is expected if tables don't exist yet. Run migrations first.",
+    );
+  }
+
   try {
     const users = await seedCanvaUsers(db);
     await seedCanvaProjects(db, users.userIds);
