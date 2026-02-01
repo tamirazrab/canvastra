@@ -2,7 +2,7 @@
 
 import { isLeft } from "fp-ts/lib/Either";
 import getTemplatesController from "@/feature/core/editor/application/controller/get-templates.controller";
-import Project from "@/feature/core/project/domain/entity/project.entity";
+import Template from "@/feature/core/template/domain/entity/template.entity";
 
 export type ProjectActionResult<T> =
   | { success: true; data: T }
@@ -15,7 +15,7 @@ export type ProjectActionResult<T> =
 export async function getTemplatesAction(
   page: number = 1,
   limit: number = 5,
-): Promise<ProjectActionResult<{ templates: Project[]; hasMore: boolean }>> {
+): Promise<ProjectActionResult<{ templates: Template[]; hasMore: boolean }>> {
   try {
     const skip = (page - 1) * limit;
     const result = await getTemplatesController({ limit, skip });

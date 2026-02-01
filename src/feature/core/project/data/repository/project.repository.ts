@@ -10,7 +10,7 @@ import ProjectUnauthorizedFailure from "@/feature/core/project/domain/failure/pr
 import ProjectRepository from "@/feature/core/project/domain/i-repo/project.repository.interface";
 import { CreateProjectParams } from "@/feature/core/project/domain/params/create-project.param-schema";
 import { UpdateProjectParams } from "@/feature/core/project/domain/params/update-project.param-schema";
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { pipe } from "fp-ts/lib/function";
 import { chain, left, map, right } from "fp-ts/lib/TaskEither";
 
@@ -33,14 +33,14 @@ export default class ProjectRepositoryImpl implements ProjectRepository {
           .offset(offset)
           .orderBy(desc(projects.updatedAt));
 
-        const total = await db
-          .select()
+        const totalResult = await db
+          .select({ value: count() })
           .from(projects)
           .where(eq(projects.userId, paginationParams.userId));
 
         return {
           data,
-          total: total.length,
+          total: totalResult[0]?.value ?? 0,
         };
       }),
       map((response) =>
@@ -66,39 +66,6 @@ export default class ProjectRepositoryImpl implements ProjectRepository {
         return right(ProjectMapper.mapToEntity(project)) as ApiTask<Project>;
       }),
     ) as ApiTask<Project>;
-  }
-
-  getTemplates(paginationParams: {
-    limit?: number;
-    skip?: number;
-  }): ApiTask<WithPagination<Project>> {
-    return pipe(
-      wrapAsync(async () => {
-        const limit = paginationParams.limit ?? 5;
-        const offset = paginationParams.skip ?? 0;
-
-        const data = await db
-          .select()
-          .from(projects)
-          .where(eq(projects.isTemplate, true))
-          .limit(limit)
-          .offset(offset)
-          .orderBy(asc(projects.isPro), desc(projects.updatedAt));
-
-        const total = await db
-          .select()
-          .from(projects)
-          .where(eq(projects.isTemplate, true));
-
-        return {
-          data,
-          total: total.length,
-        };
-      }),
-      map((response) =>
-        ProjectMapper.mapToPaginatedEntity(response.data, response.total),
-      ),
-    ) as ApiTask<WithPagination<Project>>;
   }
 
   create(params: CreateProjectParams & { userId: string }): ApiTask<Project> {

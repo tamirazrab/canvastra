@@ -64,6 +64,7 @@ export async function resetDatabase(): Promise<void> {
     "session",
     "subscription",
     "project",
+    "template",
     "verification",
     "authenticator",
     "user",
@@ -106,7 +107,7 @@ export async function resetDatabase(): Promise<void> {
     // Delete in correct order: child tables first, then parent tables
     // Use raw SQL since Drizzle can't see tables
     const deleteOrder = [
-      "account", "session", "subscription", "project", "verification", "authenticator", "user"
+      "account", "session", "subscription", "project", "template", "verification", "authenticator", "user"
     ];
 
     for (const table of deleteOrder) {
@@ -278,7 +279,7 @@ export async function runMigrations(): Promise<void> {
     // Retry with delays to handle Neon HTTP connection pooling
     console.log("\nVerifying tables were created and are accessible...");
 
-    const keyTables = ["user", "account", "session", "project"];
+    const keyTables = ["user", "account", "session", "project", "template"];
     const maxRetries = 10;
     const retryDelay = 1000; // 1 second
 

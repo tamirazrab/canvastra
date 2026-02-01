@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { BaseVM } from "reactvvm";
 import { getTemplatesAction } from "@/feature/core/editor/application/server-actions";
-import Project from "@/feature/core/project/domain/entity/project.entity";
+import Template from "@/feature/core/template/domain/entity/template.entity";
 
 export type TemplatesListVm = {
-  templates: Project[];
+  templates: Template[];
   isLoading: boolean;
   isError: boolean;
   error?: string;
@@ -17,7 +17,7 @@ export type TemplatesListVm = {
 
 export default class TemplatesListVM extends BaseVM<TemplatesListVm> {
   useVM(): TemplatesListVm {
-    const [templates, setTemplates] = useState<Project[]>([]);
+    const [templates, setTemplates] = useState<Template[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
     const [error, setError] = useState<string | undefined>();

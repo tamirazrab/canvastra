@@ -7,7 +7,7 @@ import { AlertTriangle, Loader, Crown } from "lucide-react";
 import { ActiveTool, Editor } from "@/lib/editor/types";
 import TemplatesListVM from "@/app/[lang]/editor/vm/templates-list-vm";
 import PaywallVM from "@/app/[lang]/subscription/vm/paywall-vm";
-import Project from "@/feature/core/project/domain/entity/project.entity";
+import Template from "@/feature/core/template/domain/entity/template.entity";
 
 import { cn } from "@/bootstrap/helpers/lib/ui-utils";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
@@ -34,7 +34,7 @@ export function TemplateSidebar({
     onChangeActiveTool("select");
   };
 
-  const onClick = async (template: Project) => {
+  const onClick = async (template: Template) => {
     if (template.isPro && paywallState.shouldBlock) {
       paywallState.triggerPaywall();
       return;
@@ -77,7 +77,7 @@ export function TemplateSidebar({
         <div className="p-4">
           <div className="grid grid-cols-2 gap-4">
             {templatesState.templates &&
-              templatesState.templates.map((template: Project) => (
+              templatesState.templates.map((template: Template) => (
                 <button
                   style={{
                     aspectRatio: `${template.width}/${template.height}`,

@@ -3,11 +3,11 @@
 import { useMemo } from "react";
 import CreateProjectButtonVM from "@/app/[lang]/editor/vm/create-project-button-vm";
 import PaywallVM from "@/app/[lang]/subscription/vm/paywall-vm";
-import Project from "@/feature/core/project/domain/entity/project.entity";
+import Template from "@/feature/core/template/domain/entity/template.entity";
 import { TemplateCard } from "./template-card/template-card";
 
 interface TemplatesListProps {
-  initialTemplates: Project[];
+  initialTemplates: Template[];
 }
 
 export function TemplatesList({ initialTemplates }: TemplatesListProps) {
@@ -17,7 +17,7 @@ export function TemplatesList({ initialTemplates }: TemplatesListProps) {
   const paywallVM = useMemo(() => new PaywallVM(), []);
   const paywallState = paywallVM.useVM();
 
-  const onClick = async (template: Project) => {
+  const onClick = async (template: Template) => {
     if (template.isPro && paywallState.shouldBlock) {
       paywallState.triggerPaywall();
       return;
